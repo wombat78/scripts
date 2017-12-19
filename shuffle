@@ -1,0 +1,68 @@
+#!/usr/bin/python
+"""
+  shuffles lines in a file, writing it to a new file. By default writes to stdout
+"""
+
+import argparse,sys,os,random,tempfile
+
+p=argparse.ArgumentParser("Shuffles lines in a file")
+p.add_argument("--clobber",action="store_true",help="safety. turn on to allow clobbering of existing files")
+p.add_argument("--inplace",action="store_true",help="does the shuffling in place")
+p.add_argument("infn",nargs="?",default='-',help="input text file to shuffle lines from or - for stdin")
+p.add_argument("outfn",nargs="?",help="output text file to shuffle lines from, or - for stdout",default="-")
+args=p.parse_args(sys.argv[1:])
+
+def get_in_fh(fn):
+    if fn=='-':
+        return sys.stdin
+    else:
+        return open(fn,'rt')
+
+def get_out_fh(fn):
+    if fn=='-':
+        return sys.stdout
+    else:
+        return open(fn,'wt')
+
+def main(args):
+    "runs shuffle"
+    if not args.clobber and args.outfn!='-' and os.path.exists(args.outfn):
+        raise IOError("Refusing to overwite existing file {}".format(args.outfn))
+
+    tmp_fn=""
+    if args.inplace:
+        if args.outfn!="-":
+            raise ValueError("in-place shuffling does not require output file")
+        # get a file name which is a temporary file name in the same directory
+        tmp_fh=tempfile.NamedTemporaryFile(suffix=args.infn)
+        assert(tmp_fh.file)
+        tmp_fn=tmp_fh.name
+        print >>sys.stderr, "TEMPORARY FILENAME:",tmp_fn
+        del tmp_fh
+        args.outfn=tmp_fn
+    else:
+        # not inplace, make sure that the file names are different
+        if args.infn==args.outfn and args.outfn!="-":
+            raise ValueError("Cannot have same input and output file")
+
+    # open the file handles load, shuffle and write out
+    fin=get_in_fh(args.infn)
+    data=fin.readlines()
+    fin.close()
+
+    random.shuffle(data)
+
+    if tmp_fn!="": # write to a temporary file - this is useful for inplace sort
+        fout=get_out_fh(tmp_fn)
+    else:
+        fout=get_out_fh(args.outfn)
+    fout.writelines(data)
+    fout.close()
+
+    if args.inplace and tmp_fn!="":
+        os.unlink(args.infn)
+        os.rename(tmp_fn,args.infn)
+        
+
+if __name__=='__main__':
+    main(args)
