@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+my %counts;
+
+while ($token=<>) {
+    chomp $token;
+    $counts{$token} = $counts{$token} +1
+}
+
+foreach $token (keys %counts) {
+    print "$token $counts{$token}\n";
+}

@@ -1,0 +1,8 @@
+#!/usr/bin/python
+# tokenizes text data
+
+import sys
+
+for line in sys.stdin:
+    for token in map(lambda(x): x+"\n",line.strip().split()):
+        print token,
